@@ -1,12 +1,18 @@
 package com.me.bui.homescreen;
 
+import android.appwidget.AppWidgetHost;
+import android.appwidget.AppWidgetHostView;
+import android.appwidget.AppWidgetManager;
+import android.appwidget.AppWidgetProviderInfo;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
+import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.widget.LinearLayout;
 
 import com.me.bui.homescreen.model.AppInfo;
 
@@ -27,6 +33,13 @@ public class MainActivity extends AppCompatActivity {
     private AppAdapter mAdapter;
     private List<AppInfo> mAppInfoList;
 
+    private AppWidgetManager mAppWidgetManager;
+    private AppWidgetHost mAppWidgetHost;
+    private ClockWiget mClockWiget;
+
+    static final int APPWIDGET_HOST_ID = 1024;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
         mRCAllApps.setAdapter(mAdapter);
 
         getAllApps();
+        createWidget();
     }
 
     private void getAllApps() {
@@ -100,5 +114,37 @@ public class MainActivity extends AppCompatActivity {
         mAppInfoList = appInfos;
         mAdapter.setAppInfoList(mAppInfoList);
         mAdapter.notifyDataSetChanged();
+    }
+
+    public void createWidget() {
+        // APPWIDGET_HOST_ID is any number you like
+        mAppWidgetManager = AppWidgetManager.getInstance(this);
+        mAppWidgetHost = new AppWidgetHost(this, APPWIDGET_HOST_ID);
+        AppWidgetProviderInfo newAppWidgetProviderInfo = new AppWidgetProviderInfo();
+
+        // Get an id
+        int appWidgetId = mAppWidgetHost.allocateAppWidgetId();
+
+        // Get the list of installed widgets
+        List<AppWidgetProviderInfo> appWidgetInfos = new ArrayList<AppWidgetProviderInfo>();
+        appWidgetInfos = mAppWidgetManager.getInstalledProviders();
+
+        for(int j = 0; j < appWidgetInfos.size(); j++)
+        {
+            if (appWidgetInfos.get(j).provider.getPackageName().equals("com.me.bui.homescreen") && appWidgetInfos.get(j).provider.getClassName().equals("com.me.bui.homescreen.ClockWiget"))
+            {
+                // Get the full info of the required widget
+                newAppWidgetProviderInfo = appWidgetInfos.get(j);
+                break;
+            }
+        }
+
+        // Create Widget
+        AppWidgetHostView hostView = mAppWidgetHost.createView(this, appWidgetId, newAppWidgetProviderInfo);
+        hostView.setAppWidget(appWidgetId, newAppWidgetProviderInfo);
+
+        // Add it to your layout
+        LinearLayout ll_widget =  findViewById(R.id.ll_widget);
+        ll_widget.addView(hostView);
     }
 }
