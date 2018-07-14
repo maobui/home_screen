@@ -5,19 +5,20 @@ import android.appwidget.AppWidgetHost;
 import android.appwidget.AppWidgetHostView;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
-import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.location.Geocoder;
 import android.location.Location;
-import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ResultReceiver;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
@@ -30,7 +31,6 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.FusedLocationProviderApi;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationListener;
@@ -40,7 +40,6 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.me.bui.homescreen.model.AppInfo;
 import com.me.bui.homescreen.service.FetchAddressIntentService;
-import com.me.bui.homescreen.widget.ClockWidget;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,12 +53,14 @@ import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
-        LocationListener //New ...
+        LocationListener ,
+        ActivityCompat.OnRequestPermissionsResultCallback
 {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private final static int CONNECTION_FAILURE_RESOLUTION_REQUEST = 9000;
+    private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1001;
 
     private RecyclerView mRCAllApps;
     private RecyclerView.LayoutManager mLayoutManager;
@@ -80,6 +81,7 @@ public class MainActivity extends AppCompatActivity implements
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
     private LocationCallback mLocationCallback;
+    private boolean isNeedShowSettings = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -299,18 +301,57 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         Log.i(TAG, "Location services connected.");
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+        if (checkPermissions()) {
             Log.d(TAG, getString(R.string.please_allow_permission_warning));
+
+            if (isNeedShowSettings) {
+                showSettings();
+            } else {
+                requestLocationPermission();
+            }
             return;
         }
+        isNeedShowSettings = false;
 
+        getLocation();
+    }
+
+    private void requestLocationPermission() {
+        Log.d(TAG,"requestLocationPermission");
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                Manifest.permission.ACCESS_FINE_LOCATION)) {
+            Log.d(TAG,"required permission.");
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+//                openSetting();
+            Snackbar.make(findViewById(android.R.id.content), R.string.location_access_required,
+                    Snackbar.LENGTH_INDEFINITE).setAction(R.string.ok, new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    // Request the permission
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                            PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+                }
+            }).show();
+        } else {
+            Log.d(TAG,"requestPermissions");
+            // No explanation needed; request the permission
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+        }
+    }
+
+    private void getLocation() {
+        getLastLocation();
+        if (mLastLocation == null) {
+            startLocationUpdates();
+        }
+    }
+
+    private void getLastLocation() {
         mFusedLocationProviderClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
             @Override
             public void onSuccess(Location location) {
@@ -332,11 +373,6 @@ public class MainActivity extends AppCompatActivity implements
                 handleNewLocation(location);
             }
         });
-        if (mLastLocation == null) {
-            startLocationUpdates();
-        } else {
-            handleNewLocation(mLastLocation);
-        }
     }
 
     private void handleNewLocation(Location location) {
@@ -375,6 +411,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     class AddressResultReceiver extends ResultReceiver {
+
         public AddressResultReceiver(Handler handler) {
             super(handler);
         }
@@ -400,6 +437,7 @@ public class MainActivity extends AppCompatActivity implements
             }
 
         }
+
     }
 
     private void displayAddressOutput() {
@@ -427,16 +465,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
         mFusedLocationProviderClient.requestLocationUpdates(mLocationRequest,
                 mLocationCallback,
                 null /* Looper */);
@@ -445,4 +473,70 @@ public class MainActivity extends AppCompatActivity implements
     private void stopLocationUpdates() {
         mFusedLocationProviderClient.removeLocationUpdates(mLocationCallback);
     }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        if ( requestCode == PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION ) {
+            // If request is cancelled, the result arrays are empty.
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // permission was granted, yay! Do the
+                // contacts-related task you need to do.
+                Log.d(TAG, "PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION ok");
+                getLocation();
+            } else {
+                Log.d(TAG, "PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION denied");
+                // permission denied, boo! Disable the
+                // functionality that depends on this permission.
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    showLocationPermissionRationale();
+                } else {
+                    isNeedShowSettings = true;
+                }
+            }
+        } else {
+
+            // other 'case' lines to check for other
+            // permissions this app might request.
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+
+    }
+
+    private boolean checkPermissions() {
+        return ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED /*&& ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED*/;
+    }
+
+    private void openSetting() {
+        Intent intent = new Intent();
+        intent.setAction(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        Uri uri = Uri.fromParts("package",
+                BuildConfig.APPLICATION_ID, null);
+        intent.setData(uri);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+    }
+
+    private void showLocationPermissionRationale() {
+        Log.w(TAG, "showLocationPermissionRationale");
+    }
+
+    private void showSettings () {
+        Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content), getResources().getString(R.string.location_access_required), Snackbar.LENGTH_INDEFINITE);
+        snackbar.setAction(getResources().getString(R.string.settings), new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                Uri uri = Uri.fromParts("package", getPackageName(), null);
+                intent.setData(uri);
+                startActivity(intent);
+            }
+        });
+        snackbar.show();
+    }
 }
+
+

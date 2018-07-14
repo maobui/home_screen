@@ -10,4 +10,7 @@
     <string name="call_back_location_result_null">LocationCallback with locationResult null</string>
     <string name="call_back_location_result">LocationCallback with location</string>
     <string name="please_allow_permission_warning">Please allow access location !!!!!!!!!</string>
+    <string name="location_access_required">Location access required.</string>
+    <string name="ok">Ok</string>
+    <string name="settings">Settings</string>
 </resources>
