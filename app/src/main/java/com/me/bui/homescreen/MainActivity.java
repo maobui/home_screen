@@ -62,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
         getAllApps();
         createWidget();
         createBatteryWidget();
+        createLocationWidget();
     }
 
     private void getAllApps() {
@@ -172,6 +173,35 @@ public class MainActivity extends AppCompatActivity {
         for(int j = 0; j < appWidgetInfos.size(); j++)
         {
             if (appWidgetInfos.get(j).provider.getPackageName().equals("com.me.bui.homescreen") && appWidgetInfos.get(j).provider.getClassName().equals("com.me.bui.homescreen.widget.BatteryWidget"))
+            {
+                // Get the full info of the required widget
+                newAppWidgetProviderInfo = appWidgetInfos.get(j);
+                break;
+            }
+        }
+
+        // Create Widget
+        AppWidgetHostView hostView = mAppWidgetHost.createView(this, appWidgetId, newAppWidgetProviderInfo);
+        hostView.setAppWidget(appWidgetId, newAppWidgetProviderInfo);
+
+        // Add it to your layout
+        LinearLayout ll_widget =  findViewById(R.id.ll_widget);
+        ll_widget.addView(hostView);
+    }
+
+    public void createLocationWidget() {
+        AppWidgetProviderInfo newAppWidgetProviderInfo = new AppWidgetProviderInfo();
+
+        // Get an id
+        int appWidgetId = mAppWidgetHost.allocateAppWidgetId();
+
+        // Get the list of installed widgets
+        List<AppWidgetProviderInfo> appWidgetInfos = new ArrayList<AppWidgetProviderInfo>();
+        appWidgetInfos = mAppWidgetManager.getInstalledProviders();
+
+        for(int j = 0; j < appWidgetInfos.size(); j++)
+        {
+            if (appWidgetInfos.get(j).provider.getPackageName().equals("com.me.bui.homescreen") && appWidgetInfos.get(j).provider.getClassName().equals("com.me.bui.homescreen.widget.LocationWidget"))
             {
                 // Get the full info of the required widget
                 newAppWidgetProviderInfo = appWidgetInfos.get(j);
