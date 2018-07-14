@@ -1,4 +1,4 @@
-package com.me.bui.homescreen;
+package com.me.bui.homescreen.widget;
 
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
@@ -6,12 +6,17 @@ import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.util.Log;
 import android.widget.RemoteViews;
+
+import com.me.bui.homescreen.R;
 
 /**
  * Created by mao.bui on 7/12/2018.
  */
-public class ClockWiget extends AppWidgetProvider {
+public class ClockWidget extends AppWidgetProvider {
+    private static final String TAG = ClockWidget.class.getSimpleName();
+
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
@@ -20,9 +25,9 @@ public class ClockWiget extends AppWidgetProvider {
     }
 
     private void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
-
+        Log.d(TAG, "updateAppWidget");
         // Construct the RemoteViews object
-        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.clock_wiget);
+        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.clock_widget);
         // Construct an Intent object includes web adresss.
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://erenutku.com"));
         // In widget we are not allowing to use intents as usually. We have to use PendingIntent instead of 'startActivity'

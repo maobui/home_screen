@@ -4,6 +4,8 @@ import android.appwidget.AppWidgetHost;
 import android.appwidget.AppWidgetHostView;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -12,9 +14,13 @@ import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.widget.LinearLayout;
+import android.widget.RemoteViews;
 
 import com.me.bui.homescreen.model.AppInfo;
+import com.me.bui.homescreen.widget.BatteryWidget;
+import com.me.bui.homescreen.widget.ClockWidget;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +34,7 @@ import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = MainActivity.class.getSimpleName();
     private RecyclerView mRCAllApps;
     private RecyclerView.LayoutManager mLayoutManager;
     private AppAdapter mAdapter;
@@ -35,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
 
     private AppWidgetManager mAppWidgetManager;
     private AppWidgetHost mAppWidgetHost;
-    private ClockWiget mClockWiget;
+    private ClockWidget mClockWidget;
 
     static final int APPWIDGET_HOST_ID = 1024;
 
@@ -54,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
 
         getAllApps();
         createWidget();
+        createBatteryWidget();
     }
 
     private void getAllApps() {
@@ -131,7 +139,39 @@ public class MainActivity extends AppCompatActivity {
 
         for(int j = 0; j < appWidgetInfos.size(); j++)
         {
-            if (appWidgetInfos.get(j).provider.getPackageName().equals("com.me.bui.homescreen") && appWidgetInfos.get(j).provider.getClassName().equals("com.me.bui.homescreen.ClockWiget"))
+            if (appWidgetInfos.get(j).provider.getPackageName().equals("com.me.bui.homescreen") && appWidgetInfos.get(j).provider.getClassName().equals("com.me.bui.homescreen.widget.ClockWidget"))
+            {
+                // Get the full info of the required widget
+                newAppWidgetProviderInfo = appWidgetInfos.get(j);
+                break;
+            }
+        }
+
+        // Create Widget
+        AppWidgetHostView hostView = mAppWidgetHost.createView(this, appWidgetId, newAppWidgetProviderInfo);
+        hostView.setAppWidget(appWidgetId, newAppWidgetProviderInfo);
+
+        // Add it to your layout
+        LinearLayout ll_widget =  findViewById(R.id.ll_widget);
+        ll_widget.addView(hostView);
+    }
+
+    public void createBatteryWidget() {
+        // APPWIDGET_HOST_ID is any number you like
+//        mAppWidgetManager = AppWidgetManager.getInstance(this);
+//        mAppWidgetHost = new AppWidgetHost(this, APPWIDGET_HOST_ID);
+        AppWidgetProviderInfo newAppWidgetProviderInfo = new AppWidgetProviderInfo();
+
+        // Get an id
+        int appWidgetId = mAppWidgetHost.allocateAppWidgetId();
+
+        // Get the list of installed widgets
+        List<AppWidgetProviderInfo> appWidgetInfos = new ArrayList<AppWidgetProviderInfo>();
+        appWidgetInfos = mAppWidgetManager.getInstalledProviders();
+
+        for(int j = 0; j < appWidgetInfos.size(); j++)
+        {
+            if (appWidgetInfos.get(j).provider.getPackageName().equals("com.me.bui.homescreen") && appWidgetInfos.get(j).provider.getClassName().equals("com.me.bui.homescreen.widget.BatteryWidget"))
             {
                 // Get the full info of the required widget
                 newAppWidgetProviderInfo = appWidgetInfos.get(j);

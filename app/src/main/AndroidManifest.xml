@@ -9,27 +9,37 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity"
-            android:theme="@style/AppTheme.FullScreen"
+        <activity
+            android:name=".MainActivity"
             android:launchMode="singleTask"
-            android:stateNotNeeded="true">
+            android:stateNotNeeded="true"
+            android:theme="@style/AppTheme.FullScreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <receiver android:name=".ClockWiget">
+        <receiver android:name=".widget.ClockWidget">
             <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
 
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/clock_wiget_info"/>
+                android:resource="@xml/clock_widget_info" />
+        </receiver>
+        <receiver android:name=".widget.BatteryWidget">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/battery_widget_info" />
         </receiver>
     </application>
 
