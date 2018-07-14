@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.me.bui.homescreen">
 
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -23,6 +26,7 @@
             </intent-filter>
         </activity>
 
+        // Clock Widget.
         <receiver android:name=".widget.ClockWidget">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -32,6 +36,8 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/clock_widget_info" />
         </receiver>
+
+        // Battery Widget.
         <receiver android:name=".widget.BatteryWidget">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -41,6 +47,8 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/battery_widget_info" />
         </receiver>
+
+        //Location Widget.
         <receiver android:name=".widget.LocationWidget">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -50,6 +58,10 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/location_widget_info" />
         </receiver>
+        <service
+            android:name=".service.FetchAddressIntentService"
+            android:exported="false"/>
+
     </application>
 
 </manifest>
