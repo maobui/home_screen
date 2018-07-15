@@ -43,14 +43,14 @@ public class FetchAddressIntentService extends IntentService{
         context.startService(intent);
     }
 
-    public static void startActionFetchAddress(Context context) {
-        Intent intent = new Intent(context, FetchAddressIntentService.class);
-        intent.setAction(ACTION_FETCH_ADDRESS);
-        context.startService(intent);
-    }
+//    public static void startActionFetchAddress(Context context) {
+//        Intent intent = new Intent(context, FetchAddressIntentService.class);
+//        intent.setAction(ACTION_FETCH_ADDRESS);
+//        context.startService(intent);
+//    }
 
-    public static void startActionUpdateLocation(Context context) {
-        Intent intent = new Intent(context, FetchAddressIntentService.class);
+    public static void startActionUpdateLocation(Context context, Intent intent) {
+//        Intent intent = new Intent(context, FetchAddressIntentService.class);
         intent.setAction(ACTION_UPDATE_LOCATION_WIDGETS);
         context.startService(intent);
     }
@@ -123,28 +123,61 @@ public class FetchAddressIntentService extends IntentService{
                 addressFragments.add(address.getAddressLine(i));
             }
             Log.i(TAG, getString(R.string.address_found));
-            deliverResultToReceiver(Constants.SUCCESS_RESULT,
-                    TextUtils.join(System.getProperty("line.separator"),
-                            addressFragments));
+            String country = getCoutryNameFromAddress(addressFragments);
+            deliverResultToReceiver(Constants.SUCCESS_RESULT, country);
 
             Log.i(TAG, "addressFragments.toString() : " + addressFragments.toString());
-            AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
-            int[] appWidgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(this, LocationWidget.class));
-            if (appWidgetIds == null) {
-                Log.w(TAG, "appWidgetIds NULL");
-            } else {
-                Log.w(TAG, "appWidgetIds HERE " + appWidgetIds.length);
+
+            updateCountryName(country);
+        }
+    }
+
+    private void updateCountryName(String country) {
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
+        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(this, LocationWidget.class));
+        if (appWidgetIds == null) {
+            Log.w(TAG, "appWidgetIds NULL");
+        } else {
+            Log.w(TAG, "appWidgetIds HERE " + appWidgetIds.length);
 //                for (int i : appWidgetIds) {
 //                    Log.w(TAG, "appWidgetIds i " + i);
 //                }
-            }
-            //Now update all widgets
-            LocationWidget.updateLocationWidgets(this, appWidgetManager, appWidgetIds, addressFragments.toString());
         }
+        //Now update all widgets
+        LocationWidget.updateLocationWidgets(this, appWidgetManager, appWidgetIds, country);
     }
 
     private void handleActionUpdateLocation(Intent  intent) {
 
+        String errorMessage = "";
+
+        mReceiver = intent.getParcelableExtra(Constants.RECEIVER);
+        // Get the location passed to this service through an extra.
+        String  countryInfo = intent.getStringExtra(Constants.COUNTRY_DATA_INFO);
+
+
+        // Handle case where no address was found.
+        if (countryInfo == null || countryInfo  == "") {
+            if (errorMessage.isEmpty()) {
+                errorMessage = getString(R.string.no_country_info_found);
+                Log.e(TAG, errorMessage);
+            }
+            deliverResultToReceiver(Constants.FAILURE_RESULT, errorMessage);
+        } else {
+            deliverResultToReceiver(Constants.SUCCESS_RESULT_QUERY_COUNTRY_INFO, countryInfo);
+            Log.i(TAG, "countryInfo : " + countryInfo);
+            updateCountryName(countryInfo);
+        }
+    }
+
+    private String getCoutryNameFromAddress(ArrayList<String> addressArray) {
+        String country = "";
+        if (addressArray != null && addressArray.size() > 0) {
+            String[] address = addressArray.get(0).split(",");
+            country = address[address.length - 1];
+        }
+        Log.i(TAG, "country : " + country);
+        return country;
     }
 
 }

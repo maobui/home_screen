@@ -13,4 +13,6 @@
     <string name="location_access_required">Location access required.</string>
     <string name="ok">Ok</string>
     <string name="settings">Settings</string>
+    <string name="no_country_info_found">No country info found</string>
+    <string name="country_info_found">Country info found</string>
 </resources>

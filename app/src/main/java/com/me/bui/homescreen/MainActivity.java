@@ -6,7 +6,6 @@ import android.appwidget.AppWidgetHost;
 import android.appwidget.AppWidgetHostView;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
-import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
@@ -78,6 +77,7 @@ public class MainActivity extends AppCompatActivity implements
     private CompositeDisposable disposable = new CompositeDisposable();
     private ApiService mApiService;
     private Country mCountry;
+    private String mStrCountryInfo;
 
     private static final int UPDATE_INTERVAL_IN_MILLISECONDS = 10 * 1000;
     private static final int FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = 1 * 1000;
@@ -127,7 +127,6 @@ public class MainActivity extends AppCompatActivity implements
         getAllApps();
 
         initLocationService();
-        getCountry();
     }
 
     private void initAppWidgets() {
@@ -233,8 +232,8 @@ public class MainActivity extends AppCompatActivity implements
 
     }
 
-    private void getCountry() {
-        Single<List<Country>> countryObservable = getCountry("VietNam");
+    private void getCountryInfo(String name) {
+        Single<List<Country>> countryObservable = getCountry(name);
         disposable.add(countryObservable
                 .subscribeWith(new DisposableSingleObserver<List<Country>>() {
                     @Override
@@ -276,14 +275,12 @@ public class MainActivity extends AppCompatActivity implements
                                 break;
                                 default: nameCountry = mCountry.getName();
                         }
-
-                        TextView tvShowCountry = findViewById(R.id.tv_show_country);
-                        tvShowCountry.setText(nameCountry + "\n"
+                        mStrCountryInfo = nameCountry + "\n"
                                 + mCountry.getCapital() + "\n"
                                 + mCountry.getCurrencies().get(0).getCode() + " "
                                 + mCountry.getCurrencies().get(0).getName()+ " "
-                                + mCountry.getCurrencies().get(0).getSymbol()+ " "
-                        );
+                                + mCountry.getCurrencies().get(0).getSymbol();
+                        startActionUpdateLocation();
                     }
 
                     @Override
@@ -374,7 +371,7 @@ public class MainActivity extends AppCompatActivity implements
         mAdapter.notifyDataSetChanged();
     }
 
-    protected void startIntentService() {
+    protected void startActionFetchAddress() {
         Intent intent = new Intent(this, FetchAddressIntentService.class);
         intent.putExtra(Constants.RECEIVER, mResultReceiver);
         intent.putExtra(Constants.LOCATION_DATA_EXTRA, mLastLocation);
@@ -382,9 +379,11 @@ public class MainActivity extends AppCompatActivity implements
         FetchAddressIntentService.startActionFetchAddress(this, intent);
     }
 
-    private void updateUILoc() {
-        TextView tvShowLoc = findViewById(R.id.tv_show_loc);
-        tvShowLoc.setText("");
+    protected void startActionUpdateLocation() {
+        Intent intent = new Intent(this, FetchAddressIntentService.class);
+        intent.putExtra(Constants.RECEIVER, mResultReceiver);
+        intent.putExtra(Constants.COUNTRY_DATA_INFO, mStrCountryInfo);
+        FetchAddressIntentService.startActionUpdateLocation(this, intent);
     }
 
     @Override
@@ -469,8 +468,7 @@ public class MainActivity extends AppCompatActivity implements
         stopLocationUpdates();
         mLastLocation = location;
         // Start service and update UI to reflect new location
-        startIntentService();
-        updateUILoc();
+        startActionFetchAddress();
     }
 
     @Override
@@ -518,11 +516,13 @@ public class MainActivity extends AppCompatActivity implements
             if (mAddressOutput == null) {
                 mAddressOutput = "";
             }
-            displayAddressOutput();
 
             // Show a toast message if an address was found.
             if (resultCode == Constants.SUCCESS_RESULT) {
                 showToast(getString(R.string.address_found));
+                getCountryInfo(mAddressOutput);
+            } else if (resultCode == Constants.SUCCESS_RESULT_QUERY_COUNTRY_INFO) {
+                showToast(getString(R.string.country_info_found));
             }
 
         }
@@ -530,8 +530,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void displayAddressOutput() {
-        TextView tvShowLoc = findViewById(R.id.tv_show_loc);
-        tvShowLoc.setText(mAddressOutput);
     }
 
     private void showToast(String string) {
