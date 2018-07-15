@@ -67,7 +67,7 @@ public class BatteryWidget extends AppWidgetProvider {
             batteryLevel = calculateBatteryLevel(context);
         }
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.battery_widget);
-        views.setTextViewText(R.id.batteryText, batteryLevel + "%");
+        views.setTextViewText(R.id.batteryText, "Battery status : " + batteryLevel + "%");
 
         ComponentName componentName = new ComponentName(context, BatteryWidget.class);
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

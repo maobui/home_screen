@@ -437,10 +437,10 @@ public class MainActivity extends AppCompatActivity implements
 
             // Show a toast message if an address was found.
             if (resultCode == Constants.SUCCESS_RESULT) {
-                showToast(getString(R.string.address_found));
+//                showToast(getString(R.string.address_found));
                 getCountryInfo(mAddressOutput);
             } else if (resultCode == Constants.SUCCESS_RESULT_QUERY_COUNTRY_INFO) {
-                showToast(getString(R.string.country_info_found));
+//                showToast(getString(R.string.country_info_found));
             }
 
         }

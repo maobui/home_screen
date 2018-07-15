@@ -28,8 +28,7 @@ public class ClockWidget extends AppWidgetProvider {
         Log.d(TAG, "updateAppWidget");
         // Construct the RemoteViews object
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.clock_widget);
-        // Construct an Intent object includes web adresss.
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://erenutku.com"));
+        Intent intent = new Intent(android.provider.Settings.ACTION_DATE_SETTINGS);
         // In widget we are not allowing to use intents as usually. We have to use PendingIntent instead of 'startActivity'
         PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, 0);
         // Here the basic operations the remote view can do.
