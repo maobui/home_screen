@@ -85,10 +85,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1001;
     private static final int REQUEST_CHECK_SETTINGS = 9999;
 
-    private RecyclerView mRCAllApps;
-    private RecyclerView.LayoutManager mLayoutManager;
-    private AppAdapter mAdapter;
-    private List<AppInfo> mAppInfoList;
+
 
     private AppWidgetManager mAppWidgetManager;
     private AppWidgetHost mAppWidgetHost;
@@ -113,18 +110,13 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mRCAllApps = findViewById(R.id.rc_all_app);
-        mLayoutManager = new GridLayoutManager(this, 3);
-        mAdapter = new AppAdapter(this);
-        mRCAllApps.setLayoutManager(mLayoutManager);
-        mRCAllApps.setHasFixedSize(true);
-        mRCAllApps.setAdapter(mAdapter);
+
 
         mApiService = ApiClient.getClient().create(ApiService.class);
 
         initAppWidgets();
 
-        getAllApps();
+
 
         initLocationService();
     }
@@ -167,7 +159,7 @@ public class MainActivity extends AppCompatActivity implements
             hostView.setAppWidget(appWidgetId, newAppWidgetProviderInfo);
 
             // Add it to your layout
-            LinearLayout widgetLayout = findViewById(R.id.ll_widget);
+            LinearLayout widgetLayout = findViewById(R.id.main);
             widgetLayout.addView(hostView);
 
             // And bind widget IDs to make them actually work
@@ -295,80 +287,6 @@ public class MainActivity extends AppCompatActivity implements
         return mApiService.getCountryByName(name)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread());
-    }
-
-    private void getAllApps() {
-        Single<List<AppInfo>> single = Single.fromCallable(callGetAppInfoList());
-//        single.subscribeOn(Schedulers.io())
-//                .observeOn(AndroidSchedulers.mainThread())
-//                .subscribe(getListAppObserver());
-        disposable.add(single
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeWith(new DisposableSingleObserver<List<AppInfo>>() {
-                    @Override
-                    public void onSuccess(List<AppInfo> appInfos) {
-                        updateUI(appInfos);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-
-                    }
-                }));
-
-    }
-
-    private Callable<List<AppInfo>> callGetAppInfoList() {
-        return new Callable<List<AppInfo>>() {
-            @Override
-            public List<AppInfo> call() throws Exception {
-                return getAppInfoList();
-            }
-        };
-    }
-
-    private List<AppInfo> getAppInfoList() {
-        PackageManager packageManager = this.getPackageManager();
-        List<AppInfo> appInfoList = new ArrayList<>();
-
-        Intent intent = new Intent(Intent.ACTION_MAIN, null);
-        intent.addCategory(Intent.CATEGORY_LAUNCHER);
-
-        List<ResolveInfo> allApps = packageManager.queryIntentActivities(intent, 0);
-        for (ResolveInfo ri : allApps) {
-            AppInfo app = new AppInfo(ri.loadLabel(packageManager),
-                    ri.activityInfo.packageName,
-                    ri.activityInfo.loadIcon(packageManager));
-            appInfoList.add(app);
-        }
-        return appInfoList;
-    }
-
-    private SingleObserver<List<AppInfo>> getListAppObserver() {
-        return new SingleObserver<List<AppInfo>>() {
-
-            @Override
-            public void onSubscribe(Disposable d) {
-
-            }
-
-            @Override
-            public void onSuccess(List<AppInfo> appInfos) {
-                updateUI(appInfos);
-            }
-
-            @Override
-            public void onError(Throwable e) {
-
-            }
-        };
-    }
-
-    private void updateUI(List<AppInfo> appInfos) {
-        mAppInfoList = appInfos;
-        mAdapter.setAppInfoList(mAppInfoList);
-        mAdapter.notifyDataSetChanged();
     }
 
     protected void startActionFetchAddress() {
@@ -703,6 +621,11 @@ public class MainActivity extends AppCompatActivity implements
         } catch (Exception e) {
             Log.e(TAG, "Error deleting widgets", e);
         }
+    }
+
+    public void showApps (View view){
+        Intent i = new Intent(this, AppsActivity.class);
+        startActivity(i);
     }
 }
 
