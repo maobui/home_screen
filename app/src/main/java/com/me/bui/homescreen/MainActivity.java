@@ -47,16 +47,27 @@ import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.me.bui.homescreen.model.AppInfo;
+import com.me.bui.homescreen.network.ApiClient;
+import com.me.bui.homescreen.network.ApiService;
+import com.me.bui.homescreen.network.model.Country;
 import com.me.bui.homescreen.service.FetchAddressIntentService;
+
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Callable;
 
+import io.reactivex.Observable;
+import io.reactivex.Observer;
 import io.reactivex.Single;
 import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.observers.DisposableObserver;
+import io.reactivex.observers.DisposableSingleObserver;
 import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity implements
@@ -66,6 +77,10 @@ public class MainActivity extends AppCompatActivity implements
 {
 
     private static final String TAG = MainActivity.class.getSimpleName();
+
+    private CompositeDisposable disposable = new CompositeDisposable();
+    private ApiService mApiService;
+    private Country mCountry;
 
     private static final int UPDATE_INTERVAL_IN_MILLISECONDS = 10 * 1000;
     private static final int FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = 1 * 1000;
@@ -108,12 +123,16 @@ public class MainActivity extends AppCompatActivity implements
         mRCAllApps.setHasFixedSize(true);
         mRCAllApps.setAdapter(mAdapter);
 
+        mApiService = ApiClient.getClient().create(ApiService.class);
+
         initLocationService();
 
         getAllApps();
         createWidget();
         createBatteryWidget();
         createLocationWidget();
+
+        getCountry();
     }
 
     private void initLocationService() {
@@ -160,11 +179,92 @@ public class MainActivity extends AppCompatActivity implements
 
     }
 
+    private void getCountry() {
+        Single<List<Country>> countryObservable = getCountry("VietNam");
+        disposable.add(countryObservable
+                .subscribeWith(new DisposableSingleObserver<List<Country>>() {
+                    @Override
+                    public void onSuccess(List<Country> listCountry) {
+                        mCountry = listCountry.get(0);
+                        Log.i(TAG, "Country info : " + mCountry.toString());
+                        String lang = Locale.getDefault().getLanguage();
+                        String nameCountry;
+                        switch (lang) {
+                            case "en":
+                                nameCountry = mCountry.getName();
+                                break;
+                            case "de":
+                                nameCountry = mCountry.getTranslations().getDe();
+                                break;
+                            case "es":
+                                nameCountry = mCountry.getTranslations().getEs();
+                                break;
+                            case "fr":
+                                nameCountry = mCountry.getTranslations().getFr();
+                                break;
+                            case "it":
+                                nameCountry = mCountry.getTranslations().getIt();
+                                break;
+                            case "br":
+                                nameCountry = mCountry.getTranslations().getBr();
+                                break;
+                            case "pt":
+                                nameCountry = mCountry.getTranslations().getPt();
+                                break;
+                            case "nl":
+                                nameCountry = mCountry.getTranslations().getNl();
+                                break;
+                            case "hr":
+                                nameCountry = mCountry.getTranslations().getHr();
+                                break;
+                            case "fa":
+                                nameCountry = mCountry.getTranslations().getFa();
+                                break;
+                                default: nameCountry = mCountry.getName();
+                        }
+
+                        TextView tvShowCountry = findViewById(R.id.tv_show_country);
+                        tvShowCountry.setText(nameCountry + "\n"
+                                + mCountry.getCapital() + "\n"
+                                + mCountry.getCurrencies().get(0).getCode() + " "
+                                + mCountry.getCurrencies().get(0).getName()+ " "
+                                + mCountry.getCurrencies().get(0).getSymbol()+ " "
+                        );
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.e(TAG, "onError : " + e.toString());
+                    }
+                })
+        );
+    }
+
+    private Single<List<Country>> getCountry(String name) {
+        return mApiService.getCountryByName(name)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread());
+    }
+
     private void getAllApps() {
         Single<List<AppInfo>> single = Single.fromCallable(callGetAppInfoList());
-        single.subscribeOn(Schedulers.io())
+//        single.subscribeOn(Schedulers.io())
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .subscribe(getListAppObserver());
+        disposable.add(single
+                .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(getListAppObserver());
+                .subscribeWith(new DisposableSingleObserver<List<AppInfo>>() {
+                    @Override
+                    public void onSuccess(List<AppInfo> appInfos) {
+                        updateUI(appInfos);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+                }));
 
     }
 
@@ -609,6 +709,12 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 break;
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        disposable.dispose();
     }
 }
 

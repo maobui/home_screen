@@ -4,6 +4,8 @@ package com.me.bui.homescreen;
  * Created by mao.bui on 7/14/2018.
  */
 public final class Constants {
+    public static final String BASE_URL = "https://restcountries.eu/";
+
     public static final int SUCCESS_RESULT = 0;
     public static final int FAILURE_RESULT = 1;
     public static final String PACKAGE_NAME =
