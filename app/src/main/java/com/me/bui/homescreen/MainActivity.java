@@ -352,9 +352,9 @@ public class MainActivity extends AppCompatActivity implements
 
     private void getLocation() {
         getLastLocation();
-        if (mLastLocation == null) {
-            startLocationUpdates();
-        }
+//        if (mLastLocation == null) {
+//            startLocationUpdates();
+//        }
     }
 
     private void getLastLocation() {
@@ -362,10 +362,12 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onSuccess(Location location) {
                 Log.d(TAG, "onSuccess !!!!!!!!!");
+                mLastLocation = location;
 
                 // In some rare cases the location returned can be null
                 if (location == null) {
                     Log.w(TAG, "Last Location !!!!!!!!! NULL");
+                    startLocationUpdates();
                     return;
                 }
 

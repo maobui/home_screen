@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Home Screen</string>
-    <string name="appwidget_text">EXAMPLE TEST</string>
+    <string name="appwidget_text">Getting update country info ...</string>
     <string name="add_widget">Add widget</string>
     <string name="service_not_available">Service not available</string>
     <string name="invalid_lat_long_used">Invalid lat long used.</string>

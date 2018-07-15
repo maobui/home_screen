@@ -128,7 +128,8 @@ public class FetchAddressIntentService extends IntentService{
 
             Log.i(TAG, "addressFragments.toString() : " + addressFragments.toString());
 
-            updateCountryName(country);
+//            Don't need update widget here !!!
+//            updateCountryName(country);
         }
     }
 
