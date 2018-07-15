@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetHost;
 import android.appwidget.AppWidgetHostView;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
@@ -13,6 +14,7 @@ import android.content.pm.ResolveInfo;
 import android.location.Geocoder;
 import android.location.Location;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ResultReceiver;
@@ -52,21 +54,16 @@ import com.me.bui.homescreen.network.ApiService;
 import com.me.bui.homescreen.network.model.Country;
 import com.me.bui.homescreen.service.FetchAddressIntentService;
 
-import org.w3c.dom.Text;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Callable;
 
-import io.reactivex.Observable;
-import io.reactivex.Observer;
 import io.reactivex.Single;
 import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.observers.DisposableObserver;
 import io.reactivex.observers.DisposableSingleObserver;
 import io.reactivex.schedulers.Schedulers;
 
@@ -125,14 +122,71 @@ public class MainActivity extends AppCompatActivity implements
 
         mApiService = ApiClient.getClient().create(ApiService.class);
 
-        initLocationService();
+        initAppWidgets();
 
         getAllApps();
-        createWidget();
-        createBatteryWidget();
-        createLocationWidget();
 
+        initLocationService();
         getCountry();
+    }
+
+    private void initAppWidgets() {
+        // APPWIDGET_HOST_ID is any number you like
+        mAppWidgetManager = AppWidgetManager.getInstance(this);
+        mAppWidgetHost = new AppWidgetHost(this, APPWIDGET_HOST_ID);
+        mAppWidgetHost.startListening();
+
+        // Add 3 widget.
+        createWidget("com.me.bui.homescreen" , "com.me.bui.homescreen.widget.ClockWidget");
+        createWidget("com.me.bui.homescreen" , "com.me.bui.homescreen.widget.BatteryWidget");
+        createWidget("com.me.bui.homescreen" , "com.me.bui.homescreen.widget.LocationWidget");
+    }
+
+    public boolean createWidget( String packageName, String className) {
+        // Get the list of installed widgets
+        AppWidgetProviderInfo newAppWidgetProviderInfo = null;
+        List<AppWidgetProviderInfo> appWidgetInfos;
+        appWidgetInfos = mAppWidgetManager.getInstalledProviders();
+        boolean widgetIsFound = false;
+        for(int j = 0; j < appWidgetInfos.size(); j++)
+        {
+            if (appWidgetInfos.get(j).provider.getPackageName().equals(packageName) && appWidgetInfos.get(j).provider.getClassName().equals(className))
+            {
+                // Get the full info of the required widget
+                newAppWidgetProviderInfo = appWidgetInfos.get(j);
+                widgetIsFound = true;
+                break;
+            }
+        }
+
+        if (!widgetIsFound) {
+            return false;
+        } else {
+            // Create Widget
+            int appWidgetId = mAppWidgetHost.allocateAppWidgetId();
+            AppWidgetHostView hostView = mAppWidgetHost.createView(getApplicationContext(), appWidgetId, newAppWidgetProviderInfo);
+            hostView.setAppWidget(appWidgetId, newAppWidgetProviderInfo);
+
+            // Add it to your layout
+            LinearLayout widgetLayout = findViewById(R.id.ll_widget);
+            widgetLayout.addView(hostView);
+
+            // And bind widget IDs to make them actually work
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                boolean allowed = mAppWidgetManager.bindAppWidgetIdIfAllowed(appWidgetId, newAppWidgetProviderInfo.provider);
+
+                if (!allowed) {
+                    // Request permission - https://stackoverflow.com/a/44351320/1816603
+                    Intent intent = new Intent(AppWidgetManager.ACTION_APPWIDGET_BIND);
+                    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+                    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, newAppWidgetProviderInfo.provider);
+                    final int REQUEST_BIND_WIDGET = 1987;
+                    startActivityForResult(intent, REQUEST_BIND_WIDGET);
+                }
+            }
+
+            return true;
+        }
     }
 
     private void initLocationService() {
@@ -320,98 +374,12 @@ public class MainActivity extends AppCompatActivity implements
         mAdapter.notifyDataSetChanged();
     }
 
-    public void createWidget() {
-        // APPWIDGET_HOST_ID is any number you like
-        mAppWidgetManager = AppWidgetManager.getInstance(this);
-        mAppWidgetHost = new AppWidgetHost(this, APPWIDGET_HOST_ID);
-        AppWidgetProviderInfo newAppWidgetProviderInfo = new AppWidgetProviderInfo();
-
-        // Get an id
-        int appWidgetId = mAppWidgetHost.allocateAppWidgetId();
-
-        // Get the list of installed widgets
-        List<AppWidgetProviderInfo> appWidgetInfos = new ArrayList<AppWidgetProviderInfo>();
-        appWidgetInfos = mAppWidgetManager.getInstalledProviders();
-
-        for (int j = 0; j < appWidgetInfos.size(); j++) {
-            if (appWidgetInfos.get(j).provider.getPackageName().equals("com.me.bui.homescreen") && appWidgetInfos.get(j).provider.getClassName().equals("com.me.bui.homescreen.widget.ClockWidget")) {
-                // Get the full info of the required widget
-                newAppWidgetProviderInfo = appWidgetInfos.get(j);
-                break;
-            }
-        }
-
-        // Create Widget
-        AppWidgetHostView hostView = mAppWidgetHost.createView(this, appWidgetId, newAppWidgetProviderInfo);
-        hostView.setAppWidget(appWidgetId, newAppWidgetProviderInfo);
-
-        // Add it to your layout
-        LinearLayout ll_widget = findViewById(R.id.ll_widget);
-        ll_widget.addView(hostView);
-    }
-
-    public void createBatteryWidget() {
-        // APPWIDGET_HOST_ID is any number you like
-//        mAppWidgetManager = AppWidgetManager.getInstance(this);
-//        mAppWidgetHost = new AppWidgetHost(this, APPWIDGET_HOST_ID);
-        AppWidgetProviderInfo newAppWidgetProviderInfo = new AppWidgetProviderInfo();
-
-        // Get an id
-        int appWidgetId = mAppWidgetHost.allocateAppWidgetId();
-
-        // Get the list of installed widgets
-        List<AppWidgetProviderInfo> appWidgetInfos = new ArrayList<AppWidgetProviderInfo>();
-        appWidgetInfos = mAppWidgetManager.getInstalledProviders();
-
-        for (int j = 0; j < appWidgetInfos.size(); j++) {
-            if (appWidgetInfos.get(j).provider.getPackageName().equals("com.me.bui.homescreen") && appWidgetInfos.get(j).provider.getClassName().equals("com.me.bui.homescreen.widget.BatteryWidget")) {
-                // Get the full info of the required widget
-                newAppWidgetProviderInfo = appWidgetInfos.get(j);
-                break;
-            }
-        }
-
-        // Create Widget
-        AppWidgetHostView hostView = mAppWidgetHost.createView(this, appWidgetId, newAppWidgetProviderInfo);
-        hostView.setAppWidget(appWidgetId, newAppWidgetProviderInfo);
-
-        // Add it to your layout
-        LinearLayout ll_widget = findViewById(R.id.ll_widget);
-        ll_widget.addView(hostView);
-    }
-
-    public void createLocationWidget() {
-        AppWidgetProviderInfo newAppWidgetProviderInfo = new AppWidgetProviderInfo();
-
-        // Get an id
-        int appWidgetId = mAppWidgetHost.allocateAppWidgetId();
-
-        // Get the list of installed widgets
-        List<AppWidgetProviderInfo> appWidgetInfos = new ArrayList<AppWidgetProviderInfo>();
-        appWidgetInfos = mAppWidgetManager.getInstalledProviders();
-
-        for (int j = 0; j < appWidgetInfos.size(); j++) {
-            if (appWidgetInfos.get(j).provider.getPackageName().equals("com.me.bui.homescreen") && appWidgetInfos.get(j).provider.getClassName().equals("com.me.bui.homescreen.widget.LocationWidget")) {
-                // Get the full info of the required widget
-                newAppWidgetProviderInfo = appWidgetInfos.get(j);
-                break;
-            }
-        }
-
-        // Create Widget
-        AppWidgetHostView hostView = mAppWidgetHost.createView(this, appWidgetId, newAppWidgetProviderInfo);
-        hostView.setAppWidget(appWidgetId, newAppWidgetProviderInfo);
-
-        // Add it to your layout
-        LinearLayout ll_widget = findViewById(R.id.ll_widget);
-        ll_widget.addView(hostView);
-    }
-
     protected void startIntentService() {
         Intent intent = new Intent(this, FetchAddressIntentService.class);
         intent.putExtra(Constants.RECEIVER, mResultReceiver);
         intent.putExtra(Constants.LOCATION_DATA_EXTRA, mLastLocation);
-        startService(intent);
+//        startService(intent);
+        FetchAddressIntentService.startActionFetchAddress(this, intent);
     }
 
     private void updateUILoc() {
@@ -715,6 +683,28 @@ public class MainActivity extends AppCompatActivity implements
     protected void onDestroy() {
         super.onDestroy();
         disposable.dispose();
+        mAppWidgetHost.stopListening();
+        deleteAllWidgets();
+    }
+
+    public void deleteAllWidgets () {
+        deleteWidgets("com.me.bui.homescreen" , "com.me.bui.homescreen.widget.ClockWidget");
+        deleteWidgets("com.me.bui.homescreen" , "com.me.bui.homescreen.widget.BatteryWidget");
+        deleteWidgets("com.me.bui.homescreen" , "com.me.bui.homescreen.widget.LocationWidget");
+    }
+    public void deleteWidgets(String packageName,
+                                    String className) {
+        try {
+            int[] appWidgetIds = mAppWidgetManager
+                    .getAppWidgetIds(new android.content.ComponentName(packageName, className));
+            Log.i(TAG, "About to delete " + appWidgetIds.length + " Widgets of " + packageName
+                    + " package; class=" + className);
+            for (int ind = 0; ind < appWidgetIds.length; ind++) {
+                mAppWidgetHost.deleteAppWidgetId(appWidgetIds[ind]);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error deleting widgets", e);
+        }
     }
 }
 
